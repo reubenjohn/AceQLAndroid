@@ -4,11 +4,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class ExecuteQueryResult {
-    final ResultSet resultSet;
+    final ResultSet[] resultSets;
     final SQLException sqlException;
 
-    public ExecuteQueryResult(ResultSet resultSet, SQLException e) {
-        this.resultSet = resultSet;
+    public ExecuteQueryResult(ResultSet[] resultSets, SQLException e) {
+        this.resultSets = resultSets;
         this.sqlException = e;
     }
 }

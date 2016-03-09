@@ -10,11 +10,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class AceQLDBManager {
+    //TODO Make private
+    public static BackendConnection remoteConnection;
     private static String username;
     private static String password;
-    public static BackendConnection remoteConnection;
     private static Logger l = new Logger(AceQLDBManager.class);
     private static NullPointerAsserter asserter = new NullPointerAsserter(l);
     private static String backendUrl;
@@ -39,26 +41,31 @@ public class AceQLDBManager {
         }
     }
 
-    public static void getResultSet(final OnGetPreparedStatementListener onGetPreparedStatementListener, final OnGetResultSetListener onGetResultSetListener) {
+    public static void executePreparedStatements(final OnPrepareStatements onPrepareStatements, final OnGetResultSetListener onGetResultSetListener) {
         AceQLDBManager.getDefaultRemoteConnectionIfExists(new OnRemoteConnectionEstablishedListener() {
             @Override
             public void onRemoteConnectionEstablishedListener(final BackendConnection remoteConnection, SQLException e) {
                 if (e != null) {
-                    onGetResultSetListener.onGetResultSet(null, e);
+                    onGetResultSetListener.onGetResultSets(null, e);
                 } else {
-                    ExecuteQueryTask executeQueryTask = new ExecuteQueryTask();
-                    executeQueryTask.setPreparedStatement(onGetPreparedStatementListener.onGetPreparedStatementListener(remoteConnection));
-                    executeQueryTask.execute(onGetResultSetListener);
+                    PreparedStatement[] preparedStatements = onPrepareStatements.onGetPreparedStatementListener(remoteConnection);
+                    if (preparedStatements != null) {
+                        ExecutePreparedStatementTask executePreparedStatementTask = new ExecutePreparedStatementTask();
+                        executePreparedStatementTask.setOnGetResultListener(onGetResultSetListener);
+                        executePreparedStatementTask.execute(preparedStatements);
+                    } else {
+                        onGetResultSetListener.onGetResultSets(null, new SQLException("Null prepared statement"));
+                    }
                 }
             }
         });
     }
 
-    public static <T> void getRowList(final String sql, final ItemBuilder<T> itemBuilder, final OnQueryComplete<T> onQueryComplete) {
-        getResultSet(new OnGetPreparedStatementListener() {
-            public PreparedStatement onGetPreparedStatementListener(BackendConnection remoteConnection) {
+    public static <T> void getSelectedLists(final String selectStatement, final ItemBuilder<T> itemBuilder, final OnQueryComplete<T> onQueryComplete) {
+        executePreparedStatements(new OnPrepareStatements() {
+            public PreparedStatement[] onGetPreparedStatementListener(BackendConnection remoteConnection) {
                 try {
-                    return remoteConnection.prepareStatement(sql);
+                    return new PreparedStatement[]{remoteConnection.prepareStatement(selectStatement)};
                 } catch (SQLException e) {
                     onQueryComplete.onQueryComplete(null, e);
                     return null;
@@ -66,17 +73,22 @@ public class AceQLDBManager {
             }
         }, new OnGetResultSetListener() {
             @Override
-            public void onGetResultSet(ResultSet rs, SQLException e) {
+            public void onGetResultSets(ResultSet[] resultSets, SQLException e) {
                 if (e != null) {
                     onQueryComplete.onQueryComplete(null, e);
                 } else {
                     try {
-                        ArrayList<T> pointList = new ArrayList<>();
-                        while (rs.next()) {
-                            pointList.add(itemBuilder.buildItem(rs));
+                        ArrayList<List<T>> lists = new ArrayList<>();
+                        for (ResultSet rs : resultSets) {
+                            ArrayList<T> list = new ArrayList<>();
+                            while (rs.next()) {
+                                list.add(itemBuilder.buildItem(rs));
+                            }
+                            rs.close();
+                            lists.add(list);
                         }
-                        rs.close();
-                        onQueryComplete.onQueryComplete(pointList, null);
+                        //noinspection unchecked
+                        onQueryComplete.onQueryComplete(lists, null);
                     } catch (SQLException e1) {
                         e1.printStackTrace();
                         onQueryComplete.onQueryComplete(null, e1);
@@ -84,6 +96,61 @@ public class AceQLDBManager {
                 }
             }
         });
+    }
+
+    public static <T> void performRawInsertion(final String sql, final List<T> list,
+                                               final OnInsertListener<T> onInsertListener) {
+        executePreparedStatements(new OnPrepareStatements() {
+            @Override
+            public PreparedStatement[] onGetPreparedStatementListener(BackendConnection remoteConnection) {
+                PreparedStatement[] preparedStatements = new PreparedStatement[list.size()];
+
+                try {
+                    for (int i = 0; i < preparedStatements.length; i++) {
+                        preparedStatements[i] = remoteConnection.getConnection().prepareStatement(sql);
+                        onInsertListener.onInsertRow(preparedStatements[i], list.get(i));
+                    }
+                    return preparedStatements;
+                } catch (SQLException e1) {
+                    onInsertListener.onResult(e1);
+                    return null;
+                }
+            }
+        }, new OnGetResultSetListener() {
+            @Override
+            public void onGetResultSets(ResultSet[] resultSets, SQLException e) {
+                onInsertListener.onResult(e);
+            }
+        });
+    }
+
+    public static <T extends SQLEntity> void performDefaultInsert(List<T> list, OnQueryComplete<T> onQueryComplete) {
+        if (list.isEmpty()) {
+            onQueryComplete.onQueryComplete(null, new SQLException("List to be inserted cannot be empty!"));
+        } else {
+            SQLEntity entity = list.get(0);
+            String entityName = entity.getEntityName();
+            StringBuilder statementBuilder = new StringBuilder("insert into " + entityName + " (");
+            for (String attribute : entity.getAttributeNames()) {
+                statementBuilder.append(attribute);
+                statementBuilder.append(", ");
+            }
+            statementBuilder.deleteCharAt(statementBuilder.length() - 1);
+            statementBuilder.deleteCharAt(statementBuilder.length() - 1);
+            statementBuilder.append(") ");
+//                    "values(?, ?, ?)";
+            executePreparedStatements(new OnPrepareStatements() {
+                @Override
+                public PreparedStatement[] onGetPreparedStatementListener(BackendConnection remoteConnection) {
+                    return new PreparedStatement[0];
+                }
+            }, new OnGetResultSetListener() {
+                @Override
+                public void onGetResultSets(ResultSet[] rs, SQLException e) {
+
+                }
+            });
+        }
     }
 
     private static class GetRemoteConnectionTask extends AsyncTask<OnRemoteConnectionEstablishedListener, Void, RemoteConnectionEstablishedResult> {

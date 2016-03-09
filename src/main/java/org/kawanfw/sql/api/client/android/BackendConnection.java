@@ -73,4 +73,8 @@ public class BackendConnection {
     public PreparedStatement prepareStatement(String sql) throws SQLException {
         return connection.prepareStatement(sql);
     }
+
+    public Connection getConnection() {
+        return connection;
+    }
 }

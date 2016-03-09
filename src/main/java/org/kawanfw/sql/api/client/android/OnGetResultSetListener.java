@@ -4,5 +4,5 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public interface OnGetResultSetListener {
-    void onGetResultSet(ResultSet rs, SQLException e);
+    void onGetResultSets(ResultSet[] rs, SQLException e);
 }
