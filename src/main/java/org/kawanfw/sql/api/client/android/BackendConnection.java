@@ -17,6 +17,8 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+//import org.kawanfw.sql.api.client.RemoteDriver;
+
 /**
  * This example:
  * <ul>

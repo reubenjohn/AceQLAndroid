@@ -2,9 +2,6 @@ package org.kawanfw.sql.api.client.android;
 
 import android.os.AsyncTask;
 
-import com.aspirephile.shared.debug.Logger;
-import com.aspirephile.shared.debug.NullPointerAsserter;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,14 +14,16 @@ public class AceQLDBManager {
     public static BackendConnection remoteConnection;
     private static String username;
     private static String password;
-    private static Logger l = new Logger(AceQLDBManager.class);
-    private static NullPointerAsserter asserter = new NullPointerAsserter(l);
     private static String backendUrl;
 
     public static void initialize(String backendUrl, String username, String password) {
-        AceQLDBManager.backendUrl = backendUrl;
-        AceQLDBManager.username = username;
-        AceQLDBManager.password = password;
+        if (backendUrl != null)
+            AceQLDBManager.backendUrl = backendUrl;
+        if (username != null)
+            AceQLDBManager.username = username;
+        if (password != null)
+            AceQLDBManager.password = password;
+        remoteConnection = null;
     }
 
     public static void getDefaultRemoteConnectionIfExists(OnRemoteConnectionEstablishedListener listener) {
@@ -33,7 +32,7 @@ public class AceQLDBManager {
 
     public static void getRemoteConnection(final String backendUrl, final OnRemoteConnectionEstablishedListener listener) {
         AceQLDBManager.backendUrl = backendUrl;
-        if (asserter.assertPointerQuietly(remoteConnection))
+        if (remoteConnection != null)
             //Send cached remote connection if available
             listener.onRemoteConnectionEstablishedListener(remoteConnection, null);
         else {
@@ -153,6 +152,10 @@ public class AceQLDBManager {
         }
     }
 
+    public static String getServerUrl() {
+        return backendUrl;
+    }
+
     private static class GetRemoteConnectionTask extends AsyncTask<OnRemoteConnectionEstablishedListener, Void, RemoteConnectionEstablishedResult> {
         private OnRemoteConnectionEstablishedListener listener;
 
@@ -164,11 +167,9 @@ public class AceQLDBManager {
                         .remoteConnectionBuilder(backendUrl, username, password);
                 BackendConnection newRemoteConnection = new BackendConnection(
                         connection);
-                if (asserter.assertPointer(newRemoteConnection)) {
-                    //Close the old connection if it exists
-                    if (remoteConnection != null)
-                        remoteConnection.close();
-                }
+                //Close the old connection if it exists
+                if (remoteConnection != null)
+                    remoteConnection.close();
                 //Update remote connection even if it is null as this may be intentional.
                 remoteConnection = newRemoteConnection;
                 return new RemoteConnectionEstablishedResult(remoteConnection, null);
