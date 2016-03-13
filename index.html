@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>AceQLAndroid by reubenjohn</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <meta name="viewport" content="width=device-width">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>AceQLAndroid</h1>
+        <p>Easy to use Android Studio plugin for accessing an SQL server through an AceQL web server.</p>
+
+        <p class="view"><a href="https://github.com/reubenjohn/aceqlandroid">View the Project on GitHub <small>reubenjohn/aceqlandroid</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/reubenjohn/aceqlandroid/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/reubenjohn/aceqlandroid/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/reubenjohn/aceqlandroid">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a id="aceqlandroid" class="anchor" href="#aceqlandroid" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>AceQLAndroid</h1>
+
+<h2>
+<a id="what-is-aceql" class="anchor" href="#what-is-aceql" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>What is AceQL?</h2>
+
+<p><a href="https://www.aceql.com/">AceQL</a> is a service that will allow you to connect to remote SQL databases securely from Android and Java desktop using JDBC.</p>
+
+<h2>
+<a id="what-is-aceqlandroid" class="anchor" href="#what-is-aceqlandroid" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>What is AceQLAndroid?</h2>
+
+<p>AceQLAndroid is an SDK for Android which will allow you to get your own Android app integrated with an AceQL Server out of the box! We'll handle everything in the background for you! So you can focus on building a beautiful app :)</p>
+
+<h2>
+<a id="why-do-i-need-aceql" class="anchor" href="#why-do-i-need-aceql" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Why do I need AceQL?</h2>
+
+<p>That's simply, if you have an SQL database running, and you want an android app to connect to it, then this is probably your best option. For starters, popular SQL databases such as <a href="http://www.oracle.com/technetwork/database/database-technologies/express-edition/overview/index.html">Oracle 11g</a>, does allow for software to connect to it by providing interfaces/connectors/drivers. But they are usually very much limited if not impossible when connecting to clients such as Android where limited connectivity is typical!</p>
+
+<h2>
+<a id="how-does-aceql-work" class="anchor" href="#how-does-aceql-work" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How does AceQL work?</h2>
+
+<p>When installed on the same machine that's running your SQL database, your Database Java connector <em>(<a href="http://www.oracle.com/technetwork/java/javase/jdbc/index.html">JDBC</a>)</em> should work great in connecting AceQL to your SQL database since you won't have to rely on a network. Once that's done, AceQL acts as a web server which receives SQL queries from Android <em>via http(SSL/TLS)</em> and then makes the actual SQL query on the SQL database via JDBC. This means that it will be robust even in extreme network conditions. Since it's using the same protocol (http/https) that you're using to view this page! So any device that can browse the web is theoretically compatible with your database now!</p>
+
+<h2>
+<a id="why-do-i-need-aceqlandroid" class="anchor" href="#why-do-i-need-aceqlandroid" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Why do I need AceQLAndroid?</h2>
+
+<p>Although AceQL does provide easy-to-use Java SDKs for the client side, it is still not specialized for Android. You still need to know about network and UI threads, application contexts, permissions and other things that can be nasty for beginners. Which is why we've built this SDK so you don't have to worry about it.</p>
+
+<h2>
+<a id="sneak-peek-into-the-coding" class="anchor" href="#sneak-peek-into-the-coding" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Sneak peek into the coding:</h2>
+
+<p>Although we've made a detailed <a href="https://github.com/reubenjohn/AceQLAndroid/wiki/4.-Android-setup">guide</a> on how to set up AceQLAndroid, we can't help leaving a sneak peek here:</p>
+
+<p><strong>From ANYWHERE in your application:</strong></p>
+
+<pre><code>AceQLDBManager.initialize("jdbc:aceql:http://server_ip_here:9090/ServerSqlManager","username","password"); //Only executed once in your app
+
+//Create the list you want to insert
+List&lt;Question&gt; listToInsert = new ArrayList&lt;&gt;();
+listToInsert.add(question); //Let's assume you've already instantiated this object and you want to add it to the list
+//Also make sure that it is a list of a class that implements 'SQLEntity' (For example: https://gist.github.com/reubenjohn/bd77165d97a1d1edadeb)
+
+//Specify what you want to do when the list is inserted:
+OnUpdateCompleteListener whatToDoOnCompletion = new OnUpdateCompleteListener() {
+@Override
+public void onUpdateComplete(int result, SQLException e) {
+    if (e != null) {
+        Toast.makeText(getActivity(),"Something's gone wrong",Toast.LENGTH_SHORT).show();
+        e.printStackTrace();
+    } else {
+        Toast.makeText(getActivity(),"Yay! Inserted: "+result+" items",Toast.LENGTH_SHORT).show();
+    }
+}
+};
+
+//Now simply call the function and pass the parameters
+AceQLDBManager.insertSQLEntityList(listToInsert, whatToDoOnCompletion);
+</code></pre>
+
+<h2>
+<a id="how-does-aceqlandroid-work" class="anchor" href="#how-does-aceqlandroid-work" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How does AceQLAndroid work?</h2>
+
+<p>AceQLAndroid is technically an open-sourced Android Studio module that will be used by your app to connect to your AceQL database with the minimum amount of effort from your side.<br>
+It does so by handling using the AceQL client libraries in a way that conforms to the Android framework and conventions such as:</p>
+
+<ul>
+<li>
+<strong>Multi-threading</strong>: Performing network actions on background threads and UI actions on UI threads</li>
+<li>
+<strong>Permissions</strong>: using the right permissions</li>
+<li>
+<strong>Global database handler</strong>: Allowing you to access your database from almost anywhere in your app's code</li>
+<li>
+<strong>Handling network configurations and failures</strong>: We'll let your app easily listen for network issues so you can update your UI.</li>
+<li>And more</li>
+</ul>
+
+<p>This way, you don't have to get your hands dirty allowing you to quickly access your database and focus more on your app.</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/reubenjohn">reubenjohn</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
