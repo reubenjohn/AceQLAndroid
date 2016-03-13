@@ -42,7 +42,7 @@ Although we've made a detailed [guide](https://github.com/reubenjohn/AceQLAndroi
     };
     OnGetResultSetListener onGetResultListener = new OnGetResultSetListener() {
         @Override
-        public void onGetResultSets(ResultSet[] resultSets, SQLException e) {
+        public void onQueryComplete(ResultSet[] resultSets, SQLException e) {
             ResultSet rs = resultSets[0];
             try {
                 while (rs.next()) {
@@ -54,7 +54,7 @@ Although we've made a detailed [guide](https://github.com/reubenjohn/AceQLAndroi
             }
         }
     };
-    AceQLDBManager.executePreparedStatements(onPrepareStatements, onGetResultListener);
+    AceQLDBManager.executeQuery(onPrepareStatements, onGetResultListener);
 
 How does AceQLAndroid work?
 ---

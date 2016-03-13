@@ -1,4 +1,4 @@
-package org.kawanfw.sql.api.client.android;
+package org.kawanfw.sql.api.client.android.execute.query;
 
 import java.sql.ResultSet;
 

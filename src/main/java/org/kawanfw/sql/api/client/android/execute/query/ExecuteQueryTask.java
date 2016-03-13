@@ -1,4 +1,4 @@
-package org.kawanfw.sql.api.client.android;
+package org.kawanfw.sql.api.client.android.execute.query;
 
 import android.os.AsyncTask;
 
@@ -6,7 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class ExecutePreparedStatementTask extends AsyncTask<PreparedStatement, Void, ExecuteQueryResult> {
+public class ExecuteQueryTask extends AsyncTask<PreparedStatement, Void, ExecuteQueryResult> {
     private OnGetResultSetListener listener;
 
     @Override
@@ -27,7 +27,7 @@ public class ExecutePreparedStatementTask extends AsyncTask<PreparedStatement, V
     // onPostExecute displays the results of the AsyncTask.
     @Override
     protected void onPostExecute(ExecuteQueryResult result) {
-        listener.onGetResultSets(result.resultSets, result.sqlException);
+        listener.onQueryComplete(result.resultSets, result.sqlException);
     }
 
     public void setOnGetResultListener(OnGetResultSetListener onGetResultListener) {
