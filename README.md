@@ -26,34 +26,28 @@ Although we've made a detailed [guide](https://github.com/reubenjohn/AceQLAndroi
 
 **From ANYWHERE in your application:**
 
-    AceQLDBManager.initialize("jdbc:aceql:http://server_ip_here:9090/ServerSqlManager","username","password"); //Only executed once
+    AceQLDBManager.initialize("jdbc:aceql:http://server_ip_here:9090/ServerSqlManager","username","password"); //Only executed once in your app
     
-    OnGetPrepareStatement onGetPrepareStatements = new OnGetPrepareStatement() {
-        @Override
-        public PreparedStatement onGetPreparedStatement(BackendConnection remoteConnection) {
-            try {
-                PreparedStatement preparedStatement = remoteConnection.prepareStatement("select my_column from my_table");
-                return preparedStatement;
-            } catch (SQLException e) {
-                e.printStackTrace();
-                return null;
-            }
+    //Create the list you want to insert
+    List<Question> list = new ArrayList<>();
+    list.add(question); //Let's assume you've already instantiated this object and you want to add it to the list
+    //Also make sure that it is a list of a class that implements 'SQLEntity' (For example: https://gist.github.com/reubenjohn/bd77165d97a1d1edadeb)
+    
+    //Specify what you want to do when the list is inserted:
+    OnUpdateCompleteListener onUpdateCompleteListener = new OnUpdateCompleteListener() {
+    @Override
+    public void onUpdateComplete(int result, SQLException e) {
+        if (e != null) {
+            Toast.makeText(getActivity(),"Something's gone wrong",Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
+        } else {
+            Toast.makeText(getActivity(),"Yay! Inserted: "+result+" items",Toast.LENGTH_SHORT).show();
         }
+    }
     };
-    OnGetResultSetListener onGetResultListener = new OnGetResultSetListener() {
-        @Override
-        public void onGetResultSet(ResultSet resultSets, SQLException e) {
-            try {
-                while (resultSets.next()) {
-                    String address = resultSets.getString("my_column");
-                    Log.d("tag", address);
-                }
-            } catch (SQLException e1) {
-                e1.printStackTrace();
-            }
-        }
-    };
-    AceQLDBManager.executeQuery(onGetPrepareStatements, onGetResultListener);
+    
+    //Now simply call the function and pass the parameters
+    AceQLDBManager.insertSQLEntityList(list, onUpdateCompleteListener);
 
 How does AceQLAndroid work?
 ---
