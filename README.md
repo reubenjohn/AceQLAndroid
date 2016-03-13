@@ -29,12 +29,12 @@ Although we've made a detailed [guide](https://github.com/reubenjohn/AceQLAndroi
     AceQLDBManager.initialize("jdbc:aceql:http://server_ip_here:9090/ServerSqlManager","username","password"); //Only executed once in your app
     
     //Create the list you want to insert
-    List<Question> list = new ArrayList<>();
-    list.add(question); //Let's assume you've already instantiated this object and you want to add it to the list
+    List<Question> listToInsert = new ArrayList<>();
+    listToInsert.add(question); //Let's assume you've already instantiated this object and you want to add it to the list
     //Also make sure that it is a list of a class that implements 'SQLEntity' (For example: https://gist.github.com/reubenjohn/bd77165d97a1d1edadeb)
     
     //Specify what you want to do when the list is inserted:
-    OnUpdateCompleteListener onUpdateCompleteListener = new OnUpdateCompleteListener() {
+    OnUpdateCompleteListener whatToDoOnCompletion = new OnUpdateCompleteListener() {
     @Override
     public void onUpdateComplete(int result, SQLException e) {
         if (e != null) {
@@ -47,7 +47,7 @@ Although we've made a detailed [guide](https://github.com/reubenjohn/AceQLAndroi
     };
     
     //Now simply call the function and pass the parameters
-    AceQLDBManager.insertSQLEntityList(list, onUpdateCompleteListener);
+    AceQLDBManager.insertSQLEntityList(listToInsert, whatToDoOnCompletion);
 
 How does AceQLAndroid work?
 ---
