@@ -7,7 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class ExecuteQueryTask extends AsyncTask<PreparedStatement, Void, ExecuteQueryResult> {
-    private OnGetResultSetListener listener;
+    private OnGetResultSetsListener listener;
 
     @Override
     protected ExecuteQueryResult doInBackground(PreparedStatement... preparedStatements) {
@@ -27,10 +27,10 @@ public class ExecuteQueryTask extends AsyncTask<PreparedStatement, Void, Execute
     // onPostExecute displays the results of the AsyncTask.
     @Override
     protected void onPostExecute(ExecuteQueryResult result) {
-        listener.onQueryComplete(result.resultSets, result.sqlException);
+        listener.onGetResultSets(result.resultSets, result.sqlException);
     }
 
-    public void setOnGetResultListener(OnGetResultSetListener onGetResultListener) {
+    public void setOnGetResultListener(OnGetResultSetsListener onGetResultListener) {
         this.listener = onGetResultListener;
     }
 }

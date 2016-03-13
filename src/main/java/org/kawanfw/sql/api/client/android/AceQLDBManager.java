@@ -3,13 +3,16 @@ package org.kawanfw.sql.api.client.android;
 import android.os.AsyncTask;
 import android.util.Log;
 
-import org.kawanfw.sql.api.client.android.execute.OnPrepareStatements;
+import org.kawanfw.sql.api.client.android.execute.OnGetPrepareStatement;
+import org.kawanfw.sql.api.client.android.execute.OnGetPrepareStatements;
 import org.kawanfw.sql.api.client.android.execute.query.ExecuteQueryTask;
 import org.kawanfw.sql.api.client.android.execute.query.ItemBuilder;
 import org.kawanfw.sql.api.client.android.execute.query.OnGetResultSetListener;
+import org.kawanfw.sql.api.client.android.execute.query.OnGetResultSetsListener;
 import org.kawanfw.sql.api.client.android.execute.query.OnQueryComplete;
 import org.kawanfw.sql.api.client.android.execute.update.ExecuteUpdateTask;
 import org.kawanfw.sql.api.client.android.execute.update.OnUpdateCompleteListener;
+import org.kawanfw.sql.api.client.android.execute.update.OnUpdatesCompleteListener;
 import org.kawanfw.sql.api.client.android.execute.update.SQLEntity;
 
 import java.sql.Connection;
@@ -54,79 +57,107 @@ public class AceQLDBManager {
         getRemoteConnection(backendUrl, listener);
     }
 
-    public static void executeQuery(final OnPrepareStatements onPrepareStatements, final OnGetResultSetListener onGetResultSetListener) {
+    public static void executeQueries(final OnGetPrepareStatements onGetPrepareStatements, final OnGetResultSetsListener onGetResultSetsListener) {
         AceQLDBManager.getDefaultRemoteConnectionIfExists(new OnRemoteConnectionEstablishedListener() {
             @Override
             public void onRemoteConnectionEstablishedListener(final BackendConnection remoteConnection, SQLException e) {
                 if (e != null) {
-                    onGetResultSetListener.onQueryComplete(null, e);
+                    onGetResultSetsListener.onGetResultSets(null, e);
                 } else {
-                    PreparedStatement[] preparedStatements = onPrepareStatements.onGetPreparedStatementListener(remoteConnection);
+                    PreparedStatement[] preparedStatements = onGetPrepareStatements.onGetPreparedStatements(remoteConnection);
                     if (preparedStatements != null) {
                         ExecuteQueryTask executeQueryTask = new ExecuteQueryTask();
-                        executeQueryTask.setOnGetResultListener(onGetResultSetListener);
+                        executeQueryTask.setOnGetResultListener(onGetResultSetsListener);
                         executeQueryTask.execute(preparedStatements);
                     } else {
-                        onGetResultSetListener.onQueryComplete(null, new SQLException("Null prepared statement"));
+                        onGetResultSetsListener.onGetResultSets(null, new SQLException("Null prepared statement"));
                     }
                 }
             }
         });
     }
 
-    public static void executeUpdate(final OnPrepareStatements onPrepareStatements, final OnUpdateCompleteListener onUpdateCompleteListener) {
+    public static void executeQuery(final OnGetPrepareStatement onGetPrepareStatement, final OnGetResultSetListener onGetResultSetListener) {
+        executeQueries(new OnGetPrepareStatements() {
+            @Override
+            public PreparedStatement[] onGetPreparedStatements(BackendConnection remoteConnection) {
+                return new PreparedStatement[]{onGetPrepareStatement.onGetPreparedStatement(remoteConnection)};
+            }
+        }, new OnGetResultSetsListener() {
+            @Override
+            public void onGetResultSets(ResultSet[] rs, SQLException e) {
+                onGetResultSetListener.onGetResultSet(rs == null ? null : rs[0], e);
+            }
+        });
+    }
+
+    public static void executeUpdates(final OnGetPrepareStatements onGetPrepareStatements, final OnUpdatesCompleteListener onUpdatesCompleteListener) {
         AceQLDBManager.getDefaultRemoteConnectionIfExists(new OnRemoteConnectionEstablishedListener() {
             @Override
             public void onRemoteConnectionEstablishedListener(final BackendConnection remoteConnection, SQLException e) {
                 if (e != null) {
-                    onUpdateCompleteListener.onUpdateComplete(null, e);
+                    onUpdatesCompleteListener.onUpdatesComplete(null, e);
                 } else {
-                    PreparedStatement[] preparedStatements = onPrepareStatements.onGetPreparedStatementListener(remoteConnection);
+                    PreparedStatement[] preparedStatements = onGetPrepareStatements.onGetPreparedStatements(remoteConnection);
                     if (preparedStatements == null) {
-                        onUpdateCompleteListener.onUpdateComplete(null, new SQLException("Null prepared statement"));
+                        onUpdatesCompleteListener.onUpdatesComplete(null, new SQLException("Null prepared statement"));
                     } else if (preparedStatements.length == 0) {
                         Log.e("AceQLDBManager", "Cannot execute update: Received prepared statement list of length 0");
                     } else {
-                        ExecuteUpdateTask executeQueryTask = new ExecuteUpdateTask();
-                        executeQueryTask.setOnGetResultListener(onUpdateCompleteListener);
-                        executeQueryTask.execute(preparedStatements);
+                        ExecuteUpdateTask executeUpdateTask = new ExecuteUpdateTask();
+                        executeUpdateTask.setOnGetResultListener(onUpdatesCompleteListener);
+                        executeUpdateTask.execute(preparedStatements);
                     }
                 }
             }
         });
     }
 
-    public static <T> void getSelectedLists(final String selectStatement, final ItemBuilder<T> itemBuilder, final OnQueryComplete<T> onQueryComplete) {
-        executeQuery(new OnPrepareStatements() {
-            public PreparedStatement[] onGetPreparedStatementListener(BackendConnection remoteConnection) {
+    public static void executeUpdate(final OnGetPrepareStatement onGetPrepareStatement, final OnUpdateCompleteListener onUpdateCompleteListener) {
+        executeUpdates(new OnGetPrepareStatements() {
+            @Override
+            public PreparedStatement[] onGetPreparedStatements(BackendConnection remoteConnection) {
+                return new PreparedStatement[]{onGetPrepareStatement.onGetPreparedStatement(remoteConnection)};
+            }
+        }, new OnUpdatesCompleteListener() {
+            @Override
+            public void onUpdatesComplete(int[] results, SQLException e) {
+                onUpdateCompleteListener.onUpdateComplete(results.length > 0 ? results[0] : 0, e);
+            }
+        });
+    }
+
+    public static <T> void getSelectedLists(final String selectStatement, final ItemBuilder<T> itemBuilder, final OnQueryComplete<T> onQueriesComplete) {
+        executeQuery(new OnGetPrepareStatement() {
+            public PreparedStatement onGetPreparedStatement(BackendConnection remoteConnection) {
                 try {
-                    return new PreparedStatement[]{remoteConnection.prepareStatement(selectStatement)};
+                    return remoteConnection.prepareStatement(selectStatement);
                 } catch (SQLException e) {
-                    onQueryComplete.onQueryComplete(null, e);
+                    onQueriesComplete.onQueryComplete(null, e);
                     return null;
                 }
             }
         }, new OnGetResultSetListener() {
             @Override
-            public void onQueryComplete(ResultSet[] resultSets, SQLException e) {
+            public void onGetResultSet(ResultSet resultSet, SQLException e) {
                 if (e != null) {
-                    onQueryComplete.onQueryComplete(null, e);
+                    onQueriesComplete.onQueryComplete(null, e);
                 } else {
                     try {
-                        ArrayList<List<T>> lists = new ArrayList<>();
-                        for (ResultSet rs : resultSets) {
+                        if (resultSet != null) {
                             ArrayList<T> list = new ArrayList<>();
-                            while (rs.next()) {
-                                list.add(itemBuilder.buildItem(rs));
+                            while (resultSet.next()) {
+                                list.add(itemBuilder.buildItem(resultSet));
                             }
-                            rs.close();
-                            lists.add(list);
+                            resultSet.close();
+                            //noinspection unchecked
+                            onQueriesComplete.onQueryComplete(list, null);
+                        } else {
+                            onQueriesComplete.onQueryComplete(null, new SQLException("Query did not return a single list"));
                         }
-                        //noinspection unchecked
-                        onQueryComplete.onQueryComplete(lists, null);
                     } catch (SQLException e1) {
                         e1.printStackTrace();
-                        onQueryComplete.onQueryComplete(null, e1);
+                        onQueriesComplete.onQueryComplete(null, e1);
                     }
                 }
             }
@@ -135,11 +166,11 @@ public class AceQLDBManager {
 
     public static <T extends SQLEntity> void insertSQLEntityList(final List<T> list, final OnUpdateCompleteListener onUpdateCompleteListener) {
         if (list.isEmpty()) {
-            onUpdateCompleteListener.onUpdateComplete(null, new SQLException("List to be inserted cannot be empty!"));
+            onUpdateCompleteListener.onUpdateComplete(0, new SQLException("List to be inserted cannot be empty!"));
         } else {
-            executeUpdate(new OnPrepareStatements() {
+            executeUpdate(new OnGetPrepareStatement() {
                 @Override
-                public PreparedStatement[] onGetPreparedStatementListener(BackendConnection remoteConnection) {
+                public PreparedStatement onGetPreparedStatement(BackendConnection remoteConnection) {
                     String entityName = list.get(0).getEntityName();
                     String[] entityAttributeNames = list.get(0).getAttributeNames();
 
@@ -170,20 +201,25 @@ public class AceQLDBManager {
                         for (T sqlEntity : list) {
                             int newIndex = sqlEntity.onPrepareStatement(preparedStatement, i);
                             if ((newIndex - i) != entityAttributeNames.length) {
-                                onUpdateCompleteListener.onUpdateComplete(null, new SQLException("Parameter index was not incremented by the number of attributes during PreparedStatement preparation callback: " +
+                                onUpdateCompleteListener.onUpdateComplete(0, new SQLException("Parameter index was not incremented by the number of attributes during PreparedStatement preparation callback: " +
                                         "Expected " + entityAttributeNames.length + " got " + (newIndex - i)));
-                                return new PreparedStatement[0];
+                                return null;
                             }
                             i += entityAttributeNames.length;
                         }
-                        return new PreparedStatement[]{preparedStatement};
+                        return preparedStatement;
                     } catch (SQLException e) {
                         e.printStackTrace();
-                        onUpdateCompleteListener.onUpdateComplete(null, e);
-                        return new PreparedStatement[0];
+                        onUpdateCompleteListener.onUpdateComplete(0, e);
+                        return null;
                     }
                 }
-            }, onUpdateCompleteListener);
+            }, new OnUpdateCompleteListener() {
+                @Override
+                public void onUpdateComplete(int result, SQLException e) {
+                    onUpdateCompleteListener.onUpdateComplete(result, e);
+                }
+            });
         }
     }
 

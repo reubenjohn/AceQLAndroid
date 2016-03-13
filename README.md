@@ -28,12 +28,12 @@ Although we've made a detailed [guide](https://github.com/reubenjohn/AceQLAndroi
 
     AceQLDBManager.initialize("jdbc:aceql:http://server_ip_here:9090/ServerSqlManager","username","password"); //Only executed once
     
-    OnPrepareStatements onPrepareStatements = new OnPrepareStatements() {
+    OnGetPrepareStatement onGetPrepareStatements = new OnGetPrepareStatement() {
         @Override
-        public PreparedStatement[] onGetPreparedStatementListener(BackendConnection remoteConnection) {
+        public PreparedStatement onGetPreparedStatement(BackendConnection remoteConnection) {
             try {
                 PreparedStatement preparedStatement = remoteConnection.prepareStatement("select my_column from my_table");
-                return new PreparedStatement[]{preparedStatement};
+                return preparedStatement;
             } catch (SQLException e) {
                 e.printStackTrace();
                 return null;
@@ -42,11 +42,10 @@ Although we've made a detailed [guide](https://github.com/reubenjohn/AceQLAndroi
     };
     OnGetResultSetListener onGetResultListener = new OnGetResultSetListener() {
         @Override
-        public void onQueryComplete(ResultSet[] resultSets, SQLException e) {
-            ResultSet rs = resultSets[0];
+        public void onGetResultSet(ResultSet resultSets, SQLException e) {
             try {
-                while (rs.next()) {
-                    String address = rs.getString("my_column");
+                while (resultSets.next()) {
+                    String address = resultSets.getString("my_column");
                     Log.d("tag", address);
                 }
             } catch (SQLException e1) {
@@ -54,7 +53,7 @@ Although we've made a detailed [guide](https://github.com/reubenjohn/AceQLAndroi
             }
         }
     };
-    AceQLDBManager.executeQuery(onPrepareStatements, onGetResultListener);
+    AceQLDBManager.executeQuery(onGetPrepareStatements, onGetResultListener);
 
 How does AceQLAndroid work?
 ---

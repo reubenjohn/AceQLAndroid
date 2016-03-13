@@ -6,7 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public class ExecuteUpdateTask extends AsyncTask<PreparedStatement, Void, ExecuteUpdateResult> {
-    private OnUpdateCompleteListener listener;
+    private OnUpdatesCompleteListener listener;
 
     @Override
     protected ExecuteUpdateResult doInBackground(PreparedStatement... preparedStatements) {
@@ -26,10 +26,10 @@ public class ExecuteUpdateTask extends AsyncTask<PreparedStatement, Void, Execut
     // onPostExecute displays the results of the AsyncTask.
     @Override
     protected void onPostExecute(ExecuteUpdateResult result) {
-        listener.onUpdateComplete(result.updateCounts, result.sqlException);
+        listener.onUpdatesComplete(result.updateCounts, result.sqlException);
     }
 
-    public void setOnGetResultListener(OnUpdateCompleteListener onGetResultListener) {
+    public void setOnGetResultListener(OnUpdatesCompleteListener onGetResultListener) {
         this.listener = onGetResultListener;
     }
 }
