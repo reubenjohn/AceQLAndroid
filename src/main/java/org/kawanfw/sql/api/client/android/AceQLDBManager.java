@@ -77,11 +77,16 @@ public class AceQLDBManager {
         });
     }
 
-    public static void executeQuery(final OnGetPrepareStatement onGetPrepareStatement, final OnGetResultSetListener onGetResultSetListener) {
+    public static void executeQuery(final OnGetPrepareStatement onGetPreparedStatement, final OnGetResultSetListener onGetResultSetListener) {
+        if(onGetPreparedStatement==null)
+            throw new IllegalArgumentException("Cannot pass null OnGetPreparedStatementListener!");
+        if(onGetResultSetListener==null)
+            throw new IllegalArgumentException("Cannot pass null OnGetResultSetListener!");
+
         executeQueries(new OnGetPrepareStatements() {
             @Override
             public PreparedStatement[] onGetPreparedStatements(BackendConnection remoteConnection) {
-                return new PreparedStatement[]{onGetPrepareStatement.onGetPreparedStatement(remoteConnection)};
+                return new PreparedStatement[]{onGetPreparedStatement.onGetPreparedStatement(remoteConnection)};
             }
         }, new OnGetResultSetsListener() {
             @Override
